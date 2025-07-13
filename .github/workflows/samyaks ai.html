@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotionAI - Intelligent Note Taking</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        :root {
+            --primary: #37352f;
+            --secondary: #f5f5f5;
+            --accent: #3b82f6;
+            --sidebar: #2d2d2d;
+            --card: #ffffff;
+            --text: #333333;
+            --text-light: #666666;
+            --border: #e0e0e0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --highlight: #fef3c7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: var(--secondary);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background-color: var(--sidebar);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .logo i {
+            color: var(--accent);
+        }
+
+        .sidebar-menu {
+            padding: 15px 0;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 15px;
+            border-left: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .menu-item.active {
+            background-color: rgba(59, 130, 246, 0.15);
+            border-left: 3px solid var(--accent);
+        }
+
+        .menu-item i {
+            width: 24px;
+            text-align: center;
+        }
+
+        .ai-features {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            margin: 15px;
+            padding: 15px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .ai-features h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .ai-features h3 i {
+            color: var(--accent);
+        }
+
+        .ai-tool {
+            padding: 8px 12px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .ai-tool:hover {
+            background-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .ai-tool i {
+            color: var(--accent);
+            font-size: 16px;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .topbar {
+            height: 60px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 25px;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            justify-content: space-between;
+            z-index: 90;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background-color: var(--secondary);
+            border-radius: 6px;
+            padding: 8px 15px;
+            width: 300px;
+        }
+
+        .search-bar i {
+            color: var(--text-light);
+            margin-right: 10px;
+        }
+
+        .search-bar input {
+            background: transparent;
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 14px;
+        }
+
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-actions i {
+            font-size: 18px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .user-actions i:hover {
+            color: var(--accent);
+        }
+
+        .user-profile {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Editor Area */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            padding: 20px;
+            background-color: var(--secondary);
+        }
+
+        .workspace {
+            flex: 1;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .editor-header {
+            padding: 25px 30px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .note-title {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+
+        .note-title::placeholder {
+            color: #aaa;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 16px;
+        }
+
+        .tool-btn:hover {
+            background-color: var(--secondary);
+            color: var(--text);
+        }
+
+        .tool-btn.active {
+            background-color: var(--secondary);
+            color: var(--accent);
+        }
+
+        .tool-divider {
+            width: 1px;
+            height: 24px;
+            background-color: var(--border);
+            margin: 0 5px;
+        }
+
+        .editor-content {
+            padding: 20px 30px;
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .block {
+            padding: 8px 0;
+            min-height: 28px;
+            line-height: 1.5;
+            outline: none;
+            margin-bottom: 2px;
+            position: relative;
+        }
+
+        .block:focus {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .block[data-type="heading"] {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .block[data-type="subheading"] {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .block[data-type="todo"] {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .block[data-type="todo"] .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-radius: 3px;
+            margin-top: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .block[data-type="todo"].checked .checkbox {
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .block[data-type="todo"].checked .text {
+            text-decoration: line-through;
+            color: var(--text-light);
+        }
+
+        .block[data-type="code"] {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f8f8;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .block-actions {
+            position: absolute;
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .block:hover .block-actions {
+            display: flex;
+        }
+
+        .block-action-btn {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .block-action-btn:hover {
+            color: var(--accent);
+            background: var(--secondary);
+        }
+
+        /* AI Assistant Panel */
+        .ai-panel {
+            width: 350px;
+            background-color: white;
+            border-left: 1px solid var(--border);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .ai-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ai-panel-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+        }
+
+        .ai-panel-header h2 i {
+            color: var(--accent);
+        }
+
+        .ai-panel-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .ai-prompt {
+            background-color: var(--secondary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ai-prompt:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .ai-prompt h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+
+        .ai-prompt p {
+            font-size: 13px;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        .ai-response {
+            background-color: #f0f9ff;
+            border: 1px solid #d1e7ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .ai-response h3 {
+            margin-bottom: 10px;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-response h3 i {
+            color: var(--accent);
+        }
+
+        .ai-response-content {
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .ai-response-content p {
+            margin-bottom: 10px;
+        }
+
+        .ai-response-content ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .ai-response-content li {
+            margin-bottom: 5px;
+        }
+
+        .ai-response-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .ai-action-btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .ai-action-btn.primary {
+            background-color: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 70px;
+            }
+            
+            .sidebar .menu-text, 
+            .sidebar .logo-text,
+            .ai-features h3 span,
+            .ai-features .ai-tool span {
+                display: none;
+            }
+            
+            .sidebar .logo {
+                justify-content: center;
+            }
+            
+            .menu-item {
+                justify-content: center;
+                padding: 15px 0;
+            }
+            
+            .ai-features {
+                padding: 10px 5px;
+            }
+            
+            .ai-tool {
+                justify-content: center;
+                padding: 10px 0;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .ai-panel {
+                position: absolute;
+                right: -350px;
+                height: calc(100% - 60px);
+                top: 60px;
+                z-index: 100;
+                box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+            }
+            
+            .ai-panel.active {
+                right: 0;
+            }
+        }
+
+        /* Animation for AI processing */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .ai-processing {
+            animation: pulse 1.5s infinite;
+            text-align: center;
+            padding: 20px;
+            color: var(--accent);
+        }
+
+        .ai-processing i {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background-color: var(--success);
+        }
+
+        .toast.error {
+            background-color: var(--danger);
+        }
+
+        .toast i {
+            font-size: 20px;
+        }
+
+        /* Database view */
+        .database-view {
+            display: none;
+            padding: 20px;
+        }
+
+        .database-view.active {
+            display: block;
+        }
+
+        .database-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .database-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .database-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .database-table th,
+        .database-table td {
+            border: 1px solid var(--border);
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .database-table th {
+            background-color: var(--secondary);
+            font-weight: 600;
+        }
+
+        .database-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .database-table tr:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .view-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .view-tab {
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .view-tab.active {
+            background-color: var(--accent);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <span class="logo-text">NotionAI</span>
+            </div>
+        </div>
+        
+        <div class="sidebar-menu">
+            <div class="menu-item active" data-view="editor">
+                <i class="fas fa-home"></i>
+                <span class="menu-text">Home</span>
+            </div>
+            <div class="menu-item" data-view="database">
+                <i class="fas fa-database"></i>
+                <span class="menu-text">Database</span>
+            </div>
+            <div class="menu-item">
+                <i class="fas fa-calendar"></i>
+                <span class="menu-text">Calendar</span>
+            </div>
+            <div class="menu-item">
+                <i class="fas fa-book"></i>
+                <span class="menu-text">Knowledge Base</span>
+            </div>
+            <div class="menu-item">
+                <i class="fas fa-cog"></i>
+                <span class="menu-text">Settings</span>
+            </div>
+            
+            <div class="ai-features">
+                <h3>
+                    <i class="fas fa-robot"></i>
+                    <span>AI Tools</span>
+                </h3>
+                <div class="ai-tool">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>Generate Ideas</span>
+                </div>
+                <div class="ai-tool">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Write Content</span>
+                </div>
+                <div class="ai-tool">
+                    <i class="fas fa-list-check"></i>
+                    <span>Create Tasks</span>
+                </div>
+                <div class="ai-tool">
+                    <i class="fas fa-code"></i>
+                    <span>Code Assistant</span>
+                </div>
+                <div class="ai-tool">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analyze Data</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <div class="topbar">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search notes..." id="search-input">
+            </div>
+            
+            <div class="user-actions">
+                <i class="fas fa-robot" id="toggle-ai-panel"></i>
+                <i class="fas fa-history" id="version-history"></i>
+                <i class="fas fa-share-alt" id="share-note"></i>
+                <i class="fas fa-bell"></i>
+                <div class="user-profile">JS</div>
+            </div>
+        </div>
+        
+        <!-- Editor Area -->
+        <div class="editor-container">
+            <div class="workspace">
+                <!-- Editor View -->
+                <div class="editor-view active-view">
+                    <div class="editor-header">
+                        <input type="text" class="note-title" placeholder="Untitled Note" id="note-title" value="Project Planning with AI">
+                        
+                        <div class="editor-toolbar">
+                            <button class="tool-btn" data-command="bold"><i class="fas fa-bold"></i></button>
+                            <button class="tool-btn" data-command="italic"><i class="fas fa-italic"></i></button>
+                            <button class="tool-btn" data-command="underline"><i class="fas fa-underline"></i></button>
+                            <div class="tool-divider"></div>
+                            <button class="tool-btn" data-command="heading"><i class="fas fa-heading"></i></button>
+                            <button class="tool-btn" data-command="ul"><i class="fas fa-list-ul"></i></button>
+                            <button class="tool-btn" data-command="ol"><i class="fas fa-list-ol"></i></button>
+                            <button class="tool-btn" data-command="todo"><i class="fas fa-check-square"></i></button>
+                            <div class="tool-divider"></div>
+                            <button class="tool-btn" data-command="link"><i class="fas fa-link"></i></button>
+                            <button class="tool-btn" data-command="image"><i class="fas fa-image"></i></button>
+                            <button class="tool-btn" data-command="table"><i class="fas fa-table"></i></button>
+                            <button class="tool-btn" data-command="code"><i class="fas fa-code"></i></button>
+                            <div class="tool-divider"></div>
+                            <button class="tool-btn" data-command="comment"><i class="fas fa-comment-dots"></i></button>
+                            <button class="tool-btn" data-command="ai"><i class="fas fa-robot"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="editor-content" id="editor-content" contenteditable="true">
+                        <div class="block" data-type="paragraph">Welcome to your new NotionAI workspace! This is a powerful note-taking application with built-in artificial intelligence to help you write, organize, and analyze information.</div>
+                        
+                        <div class="block" data-type="heading">Project Overview</div>
+                        
+                        <div class="block" data-type="paragraph">We're developing a new mobile application that will revolutionize how people manage their daily tasks. The app will include:</div>
+                        
+                        <div class="block" data-type="todo">
+                            <div class="checkbox"><i class="fas fa-check"></i></div>
+                            <div class="text">AI-powered task suggestions</div>
+                        </div>
+                        
+                        <div class="block" data-type="todo">
+                            <div class="checkbox"><i class="fas fa-check"></i></div>
+                            <div class="text">Natural language processing for task entry</div>
+                        </div>
+                        
+                        <div class="block" data-type="todo" checked>
+                            <div class="checkbox"><i class="fas fa-check"></i></div>
+                            <div class="text">Integration with calendar and email</div>
+                        </div>
+                        
+                        <div class="block" data-type="todo">
+                            <div class="checkbox"><i class="fas fa-check"></i></div>
+                            <div class="text">Predictive time management</div>
+                        </div>
+                        
+                        <div class="block" data-type="subheading">Key Features</div>
+                        
+                        <div class="block" data-type="paragraph">Here are some of the standout features that will make our app unique in the market:</div>
+                        
+                        <div class="block" data-type="paragraph">• Voice-activated task management<br>• Automated scheduling based on priorities<br>• Team collaboration tools<br>• Progress tracking and analytics</div>
+                        
+                        <div class="block" data-type="paragraph">Click the AI assistant icon on the top right to explore how artificial intelligence can enhance your note-taking experience!</div>
+                    </div>
+                </div>
+                
+                <!-- Database View -->
+                <div class="database-view" id="database-view">
+                    <div class="database-header">
+                        <h2>Project Tasks</h2>
+                        <div class="database-actions">
+                            <button class="ai-action-btn primary"><i class="fas fa-plus"></i> New Item</button>
+                            <button class="ai-action-btn"><i class="fas fa-filter"></i> Filter</button>
+                            <button class="ai-action-btn"><i class="fas fa-sort"></i> Sort</button>
+                        </div>
+                    </div>
+                    
+                    <div class="view-tabs">
+                        <div class="view-tab active"><i class="fas fa-table"></i> Table</div>
+                        <div class="view-tab"><i class="fas fa-th-large"></i> Board</div>
+                        <div class="view-tab"><i class="fas fa-calendar"></i> Calendar</div>
+                        <div class="view-tab"><i class="fas fa-grip"></i> Gallery</div>
+                    </div>
+                    
+                    <table class="database-table">
+                        <thead>
+                            <tr>
+                                <th>Task</th>
+                                <th>Status</th>
+                                <th>Assignee</th>
+                                <th>Due Date</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Design user interface</td>
+                                <td><span class="status-badge in-progress">In Progress</span></td>
+                                <td>Alex Chen</td>
+                                <td>Jun 30, 2025</td>
+                                <td>High</td>
+                            </tr>
+                            <tr>
+                                <td>Implement authentication</td>
+                                <td><span class="status-badge completed">Completed</span></td>
+                                <td>Jamie Smith</td>
+                                <td>Jun 15, 2025</td>
+                                <td>Medium</td>
+                            </tr>
+                            <tr>
+                                <td>Develop AI recommendation engine</td>
+                                <td><span class="status-badge not-started">Not Started</span></td>
+                                <td>Taylor Johnson</td>
+                                <td>Jul 20, 2025</td>
+                                <td>High</td>
+                            </tr>
+                            <tr>
+                                <td>Write documentation</td>
+                                <td><span class="status-badge in-progress">In Progress</span></td>
+                                <td>Morgan Lee</td>
+                                <td>Jul 10, 2025</td>
+                                <td>Medium</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- AI Assistant Panel -->
+            <div class="ai-panel" id="ai-panel">
+                <div class="ai-panel-header">
+                    <h2><i class="fas fa-robot"></i> AI Assistant</h2>
+                    <i class="fas fa-times" id="close-ai-panel"></i>
+                </div>
+                
+                <div class="ai-panel-content">
+                    <div class="ai-prompt" onclick="showAIResponse('summarize')">
+                        <h3><i class="fas fa-file-contract"></i> Summarize this document</h3>
+                        <p>Get a concise summary of the key points in this document.</p>
+                    </div>
+                    
+                    <div class="ai-prompt" onclick="showAIResponse('improve')">
+                        <h3><i class="fas fa-magic"></i> Improve writing</h3>
+                        <p>Enhance the clarity and professionalism of this text.</p>
+                    </div>
+                    
+                    <div class="ai-prompt" onclick="showAIResponse('action')">
+                        <h3><i class="fas fa-tasks"></i> Extract action items</h3>
+                        <p>Identify and list all tasks and action items in this document.</p>
+                    </div>
+                    
+                    <div class="ai-prompt" onclick="showAIResponse('ideas')">
+                        <h3><i class="fas fa-lightbulb"></i> Generate ideas</h3>
+                        <p>Brainstorm related concepts and expansion ideas.</p>
+                    </div>
+                    
+                    <div class="ai-prompt" onclick="showAIResponse('questions')">
+                        <h3><i class="fas fa-question-circle"></i> Suggest questions</h3>
+                        <p>What should we be asking about this content?</p>
+                    </div>
+                    
+                    <div class="ai-response" id="ai-response">
+                        <h3><i class="fas fa-robot"></i> AI Response</h3>
+                        <div class="ai-response-content" id="ai-response-content">
+                            <!-- AI response will be inserted here -->
+                        </div>
+                        <div class="ai-response-actions">
+                            <button class="ai-action-btn primary" onclick="insertAIResponse()"><i class="fas fa-plus"></i> Insert to Document</button>
+                            <button class="ai-action-btn"><i class="fas fa-sync"></i> Regenerate</button>
+                            <button class="ai-action-btn"><i class="fas fa-times"></i> Dismiss</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message">Note saved successfully!</span>
+    </div>
+
+    <script>
+        // Simulated database for notes
+        const notesDB = {
+            currentNote: {
+                id: 'note-001',
+                title: 'Project Planning with AI',
+                content: '',
+                blocks: [],
+                lastSaved: null
+            },
+            notes: [
+                { id: 'note-001', title: 'Project Planning with AI', lastModified: new Date() },
+                { id: 'note-002', title: 'Meeting Notes - Product Strategy', lastModified: new Date('2025-06-18') },
+                { id: 'note-003', title: 'Research on AI Technologies', lastModified: new Date('2025-06-15') },
+                { id: 'note-004', title: 'Team Task List', lastModified: new Date('2025-06-10') },
+                { id: 'note-005', title: 'User Feedback Analysis', lastModified: new Date('2025-06-05') }
+            ],
+            saveNote: function(note) {
+                // In a real app, this would be an API call to the backend
+                console.log('Saving note:', note.title);
+                this.currentNote = note;
+                this.currentNote.lastSaved = new Date();
+                
+                // Update last modified in notes list
+                const noteIndex = this.notes.findIndex(n => n.id === note.id);
+                if (noteIndex !== -1) {
+                    this.notes[noteIndex].lastModified = new Date();
+                }
+                
+                // Show toast notification
+                showToast('Note saved successfully!', 'success');
+            },
+            getNote: function(id) {
+                return this.currentNote;
+            },
+            searchNotes: function(query) {
+                return this.notes.filter(note => 
+                    note.title.toLowerCase().includes(query.toLowerCase())
+                );
+            }
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set focus to title
+            document.querySelector('.note-title').focus();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Auto-save every 30 seconds
+            setInterval(autoSaveNote, 30000);
+        });
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Toggle AI panel
+            document.getElementById('toggle-ai-panel').addEventListener('click', function() {
+                document.getElementById('ai-panel').classList.toggle('active');
+            });
+            
+            document.getElementById('close-ai-panel').addEventListener('click', function() {
+                document.getElementById('ai-panel').classList.remove('active');
+            });
+            
+            // Todo list functionality
+            document.querySelectorAll('.block[data-type="todo"]').forEach(todo => {
+                const checkbox = todo.querySelector('.checkbox');
+                checkbox.addEventListener('click', function() {
+                    todo.classList.toggle('checked');
+                    saveNoteContent();
+                });
+            });
+            
+            // Menu navigation
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const view = this.getAttribute('data-view');
+                    if (view) {
+                        document.querySelectorAll('.active-view').forEach(v => v.classList.remove('active-view'));
+                        document.getElementById(`${view}-view`).classList.add('active-view');
+                    }
+                });
+            });
+            
+            // Title change
+            document.getElementById('note-title').addEventListener('input', function() {
+                notesDB.currentNote.title = this.value;
+                saveNoteContent();
+            });
+            
+            // Editor content change
+            document.getElementById('editor-content').addEventListener('input', function() {
+                saveNoteContent();
+            });
+            
+            // Toolbar buttons
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const command = this.getAttribute('data-command');
+                    applyFormatCommand(command);
+                });
+            });
+            
+            // Search input
+            document.getElementById('search-input').addEventListener('input', function(e) {
+                const results = notesDB.searchNotes(e.target.value);
+                console.log('Search results:', results);
+            });
+            
+            // Share button
+            document.getElementById('share-note').addEventListener('click', function() {
+                showToast('Share link copied to clipboard!', 'success');
+            });
+        }
+
+        // Save note content to the database
+        function saveNoteContent() {
+            const title = document.getElementById('note-title').value;
+            const content = document.getElementById('editor-content').innerHTML;
+            
+            notesDB.currentNote.title = title;
+            notesDB.currentNote.content = content;
+            notesDB.saveNote(notesDB.currentNote);
+        }
+
+        // Auto-save note
+        function autoSaveNote() {
+            if (document.getElementById('note-title').value.trim() !== '') {
+                saveNoteContent();
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            toast.className = 'toast';
+            
+            if (type) {
+                toast.classList.add(type);
+            }
+            
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Apply formatting command
+        function applyFormatCommand(command) {
+            console.log('Applying command:', command);
+            
+            // Highlight the active button
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Execute command based on type
+            switch(command) {
+                case 'bold':
+                    document.execCommand('bold', false, null);
+                    break;
+                case 'italic':
+                    document.execCommand('italic', false, null);
+                    break;
+                case 'underline':
+                    document.execCommand('underline', false, null);
+                    break;
+                case 'heading':
+                    // Create a heading block
+                    const headingBlock = document.createElement('div');
+                    headingBlock.className = 'block';
+                    headingBlock.dataset.type = 'heading';
+                    headingBlock.textContent = 'Heading';
+                    headingBlock.contentEditable = true;
+                    
+                    // Insert at current position
+                    const selection = window.getSelection();
+                    const range = selection.getRangeAt(0);
+                    range.deleteContents();
+                    range.insertNode(headingBlock);
+                    
+                    // Focus on the new block
+                    headingBlock.focus();
+                    break;
+                case 'code':
+                    // Create a code block
+                    const codeBlock = document.createElement('div');
+                    codeBlock.className = 'block';
+                    codeBlock.dataset.type = 'code';
+                    codeBlock.textContent = '// Write your code here';
+                    codeBlock.contentEditable = true;
+                    
+                    // Insert at current position
+                    const sel = window.getSelection();
+                    const rng = sel.getRangeAt(0);
+                    rng.deleteContents();
+                    rng.insertNode(codeBlock);
+                    
+                    // Focus on the new block
+                    codeBlock.focus();
+                    break;
+                case 'todo':
+                    // Create a todo block
+                    const todoBlock = document.createElement('div');
+                    todoBlock.className = 'block';
+                    todoBlock.dataset.type = 'todo';
+                    todoBlock.innerHTML = `
+                        <div class="checkbox"><i class="fas fa-check"></i></div>
+                        <div class="text">New task</div>
+                    `;
+                    todoBlock.contentEditable = false;
+                    todoBlock.querySelector('.text').contentEditable = true;
+                    
+                    // Add event listener for checkbox
+                    todoBlock.querySelector('.checkbox').addEventListener('click', function() {
+                        todoBlock.classList.toggle('checked');
+                    });
+                    
+                    // Insert at current position
+                    const selection2 = window.getSelection();
+                    const range2 = selection2.getRangeAt(0);
+                    range2.deleteContents();
+                    range2.insertNode(todoBlock);
+                    
+                    // Focus on the text
+                    todoBlock.querySelector('.text').focus();
+                    break;
+                // Other commands would be implemented similarly
+            }
+            
+            saveNoteContent();
+        }
+
+        // AI response simulation
+        function showAIResponse(type) {
+            const responseEl = document.getElementById('ai-response');
+            const contentEl = document.getElementById('ai-response-content');
+            
+            // Show processing animation
+            contentEl.innerHTML = `
+                <div class="ai-processing">
+                    <i class="fas fa-cog fa-spin"></i>
+                    <p>Processing with AI...</p>
+                </div>
+            `;
+            responseEl.style.display = 'block';
+            
+            // Simulate AI processing time
+            setTimeout(() => {
+                let responseContent = '';
+                
+                switch(type) {
+                    case 'summarize':
+                        responseContent = `
+                            <p><strong>Document Summary:</strong></p>
+                            <p>This document outlines a project plan for developing a revolutionary mobile task management application. Key features include AI-powered task suggestions, natural language processing, calendar/email integration, and predictive time management.</p>
+                            <p>The app will offer voice-activated task management, automated scheduling, team collaboration tools, and progress analytics. The project is currently in the planning phase with several features already conceptualized.</p>
+                        `;
+                        break;
+                    case 'improve':
+                        responseContent = `
+                            <p><strong>Improved Writing:</strong></p>
+                            <p>Welcome to your NotionAI workspace! This advanced note-taking application incorporates artificial intelligence to enhance your writing, organization, and analytical capabilities.</p>
+                            <p><strong>Project Overview:</strong></p>
+                            <p>We're developing an innovative mobile application designed to transform daily task management. The application will incorporate the following features:</p>
+                            <ul>
+                                <li>AI-powered task suggestions</li>
+                                <li>Natural language processing for task entry</li>
+                                <li>Calendar and email integration</li>
+                                <li>Predictive time management capabilities</li>
+                            </ul>
+                        `;
+                        break;
+                    case 'action':
+                        responseContent = `
+                            <p><strong>Action Items:</strong></p>
+                            <ul>
+                                <li>Develop AI-powered task suggestion algorithm</li>
+                                <li>Implement natural language processing for task entry</li>
+                                <li>Create calendar and email integration modules</li>
+                                <li>Build predictive time management feature</li>
+                                <li>Design voice-activated task management system</li>
+                                <li>Develop automated scheduling based on priorities</li>
+                                <li>Create team collaboration tools</li>
+                                <li>Implement progress tracking and analytics dashboard</li>
+                            </ul>
+                        `;
+                        break;
+                    case 'ideas':
+                        responseContent = `
+                            <p><strong>Expansion Ideas:</strong></p>
+                            <ul>
+                                <li>Add habit tracking and personal goal setting features</li>
+                                <li>Implement location-based task reminders (geofencing)</li>
+                                <li>Include a "focus mode" that minimizes distractions</li>
+                                <li>Develop an AI coach that provides productivity insights</li>
+                                <li>Add integration with smart home devices</li>
+                                <li>Create a marketplace for task-specific templates</li>
+                                <li>Implement team performance analytics for managers</li>
+                                <li>Add a "delegation" feature for assigning tasks to team members</li>
+                            </ul>
+                        `;
+                        break;
+                    case 'questions':
+                        responseContent = `
+                            <p><strong>Key Questions:</strong></p>
+                            <ul>
+                                <li>What specific AI models will be used for task suggestions?</li>
+                                <li>How will predictive time management handle unexpected events?</li>
+                                <li>What platforms will the mobile app support (iOS, Android)?</li>
+                                <li>What security measures will protect user data?</li>
+                                <li>How will the app differentiate from competitors like Todoist or Notion?</li>
+                                <li>What is the estimated timeline for development phases?</li>
+                                <li>What are the technical requirements for the NLP implementation?</li>
+                                <li>How will team collaboration features handle permissions and access control?</li>
+                            </ul>
+                        `;
+                        break;
+                }
+                
+                contentEl.innerHTML = responseContent;
+                // Store the AI response for insertion
+                window.currentAIResponse = responseContent;
+            }, 1500);
+        }
+
+        // Insert AI response into document
+        function insertAIResponse() {
+            if (!window.currentAIResponse) return;
+            
+            const editor = document.getElementById('editor-content');
+            const newBlock = document.createElement('div');
+            newBlock.className = 'block';
+            newBlock.dataset.type = 'paragraph';
+            newBlock.innerHTML = window.currentAIResponse;
+            
+            editor.appendChild(newBlock);
+            saveNoteContent();
+            showToast('AI response inserted into document!', 'success');
+        }
+
+        // Add new block on Enter key
+        document.getElementById('editor-content').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const newBlock = document.createElement('div');
+                newBlock.className = 'block';
+                newBlock.dataset.type = 'paragraph';
+                newBlock.textContent = '';
+                newBlock.contentEditable = true;
+                
+                // Insert after current block
+                this.appendChild(newBlock);
+                
+                // Focus on the new block
+                newBlock.focus();
+                
+                // Place cursor in the new block
+                const range = document.createRange();
+                const selection = window.getSelection();
+                range.selectNodeContents(newBlock);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                saveNoteContent();
+            }
+        });
+    </script>
+</body>
+</html>
